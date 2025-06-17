@@ -131,12 +131,21 @@
     <ClCompile Include="KPKE.cpp" />
     <ClCompile Include="Kyber.cpp" />
     <ClCompile Include="Poly.cpp" />
+    <ClCompile Include="PolyCoder.cpp" />
+    <ClCompile Include="PolyMatrix.cpp" />
+    <ClCompile Include="PolyRing.cpp" />
+    <ClCompile Include="PolyVector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KPKE.h" />
+    <ClInclude Include="KyberContext.h" />
     <ClInclude Include="MathUtils.h" />
     <ClInclude Include="Params.h" />
     <ClInclude Include="Poly.h" />
+    <ClInclude Include="PolyCoder.h" />
+    <ClInclude Include="PolyMatrix.h" />
+    <ClInclude Include="PolyRing.h" />
+    <ClInclude Include="PolyVector.h" />
     <ClInclude Include="SHAKE128.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

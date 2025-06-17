@@ -7,35 +7,34 @@
 #include <vector>
 #include "utils.h"
 #include "MathUtils.h"
+#include "PolyRing.h"
 
 class Poly
 {
-public:
+private:
+	PolyRing& ring;
 	std::vector<uint16_t> coeffs;
+public:
+	Poly(PolyRing& ring);
 
-	Poly();
-
-	static void sampleNTT(Poly A[KYBER_K][KYBER_K], uint8_t rho[32], int8_t i, int8_t j);
-	static Poly samplePolyCBD(int nu, uint8_t* B);
-
+	void setCoeffs(const std::vector<int>& coeffs);
 	void ntt();
 	void invntt();
+	void print(const char* msg) const;
+	
+	PolyRing& getRing();
 
-	static Poly multiplyNTT(Poly& f, Poly& g);
-	static Poly add(Poly& f, Poly& g);
-	static Poly sub(Poly& f, Poly& g);
-
-	std::vector<uint8_t> byteEncodePoly();
-	void byteDecodePoly(std::vector<uint8_t>& bytes);
-	static std::vector<uint8_t> byteEncode(Poly vec[KYBER_K], int d);
-	static void byteDecode(Poly vec[KYBER_K], std::vector<uint8_t>& bytes, int d);
-
-	std::vector<uint8_t> byteEncodePoly(int d);
-	void byteDecodePoly(std::vector<uint8_t>& bytes, int d);
+	friend const Poly operator* (const Poly& left, const Poly& right);
+	friend const Poly operator+ (const Poly& left, const Poly& right);
+	Poly& operator+= (const Poly& right);
+	friend const Poly operator- (const Poly& left, const Poly& right);
+	Poly& operator-= (const Poly& right);
+	const Poly& operator= (const Poly& right);
+	uint16_t& operator[] (int i);
+	const uint16_t& operator[] (int i) const;
+	friend bool operator== (const Poly& left, const Poly& right);
 
 	void compress(int d);
 	void decompress(int d);
-
-	void print(const char* msg);
 };
 

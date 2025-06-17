@@ -1,74 +1,108 @@
 #include "Poly.h"
 
-Poly::Poly()
+Poly::Poly(PolyRing& ring) : ring(ring)
 {
-	coeffs = std::vector<uint16_t>(KYBER_N);
-	for (int16_t i = 0; i < KYBER_N; i++) {
-		coeffs[i] = 1;
+	int n = ring.getN();
+	coeffs = std::vector<uint16_t>(n);
+	for (int16_t i = 0; i < n; i++) {
+		coeffs[i] = 0;
 	}
 }
 
-void Poly::sampleNTT(Poly A[KYBER_K][KYBER_K], uint8_t rho[32], int8_t i, int8_t j)
+void Poly::setCoeffs(const std::vector<int>& coeffs)
 {
-	SHAKE128 ctx;
-
-	uint8_t seed[34];
-	memcpy(seed, rho, 32);
-	seed[32] = i;
-	seed[33] = j;
-
-	ctx.absorb(seed, 34);
-
-	short counter = 0;
-
-	while (counter < KYBER_N) {
-		uint8_t C[3];
-		ctx.squeeze(C, 3);
-		short d1 = C[0] + 256 * (C[1] % 16);
-		short d2 = C[1] / 16 + 16 * C[2];
-
-		if (d1 < KYBER_Q) {
-			A[i][j].coeffs[counter] = d1;
-			counter++;
-		}
-
-		if (d2 < KYBER_Q && counter < KYBER_N) {
-			A[i][j].coeffs[counter] = d2;
-			counter++;
-		}
+	if (ring.getN() < coeffs.size()) {
+		throw std::invalid_argument("coeffs count must be less or equal to PolyRing N parameter");
+	}
+	int q = ring.getQ();
+	for (int i = 0; i < ring.getN(); i++) {
+		this->coeffs[i] = mod(coeffs[i], q);
 	}
 }
 
-Poly Poly::samplePolyCBD(int nu, uint8_t* b)
+Poly& Poly::operator+=(const Poly& right)
 {
-	Poly result;
-	std::vector<uint8_t> bits = bytesToBits(b, 64 * nu);
-	for (int i = 0; i < KYBER_N; i++) {
-		int8_t x = 0;
-		int8_t y = 0;
-		
-		for (int j = 0; j < nu; j++) {
-			x += bits[2 * i * nu + j];
-			y += bits[2 * i * nu + nu + j];
-		}
-
-		result.coeffs[i] = ((x - y) % KYBER_Q + KYBER_Q) % KYBER_Q;
+	if (ring != right.ring) {
+		throw std::invalid_argument("Operands must have the same ring");
 	}
-	return result;
+
+	int n = ring.getN();
+	int q = ring.getQ();
+
+	for (int i = 0; i < n; i++) {
+		coeffs[i] = mod(coeffs[i] + right.coeffs[i], q);
+	}
+
+	return *this;
+}
+
+Poly& Poly::operator-=(const Poly& right)
+{
+	if (ring != right.ring) {
+		throw std::invalid_argument("Operands must have the same ring");
+	}
+
+	int n = ring.getN();
+	int q = ring.getQ();
+
+	for (int i = 0; i < n; i++) {
+		coeffs[i] = mod(coeffs[i] - right.coeffs[i], q);
+	}
+
+	return *this;
+}
+
+const Poly& Poly::operator=(const Poly& right)
+{
+	if (this == &right) {
+		return right;
+	}
+
+	coeffs = right.coeffs;
+	return *this;
+}
+
+uint16_t& Poly::operator[](int i)
+{
+	if (i < 0 || i > coeffs.size()) {
+		throw std::invalid_argument("Index is out of range");
+	}
+
+	return coeffs[i];
+}
+
+const uint16_t& Poly::operator[](int i) const
+{
+	if (i < 0 || i > coeffs.size()) {
+		throw std::invalid_argument("Index is out of range");
+	}
+
+	return coeffs[i];
 }
 
 void Poly::ntt()
 {
+	int n = ring.getN();
+	int q = ring.getQ();
+	int zeta0 = ring.getZeta();
+	int bitLength = log2(n) - 1;
+
 	int i = 1;
 	int zeta = 0;
 	int t = 0;
-	for (int len = KYBER_N / 2; len >= 2; len /= 2) {
-		for (int start = 0; start < KYBER_N; start += 2 * len) {
-			zeta = modExp(ZETA, reverse(i++, LOG2N - 1), KYBER_Q); 
+
+	int temp1 = 0;
+	int temp2 = 0;
+
+	for (int len = n / 2; len >= 2; len >>= 1) {
+		for (int start = 0; start < n; start += 2 * len) {
+			zeta = modExp(zeta0, reverse(i++, bitLength), q);
 			for (int j = start; j < start + len; j++) {
-				t = ((zeta * coeffs[j + len]) % KYBER_Q + KYBER_Q) % KYBER_Q;
-				coeffs[j + len] = ((coeffs[j] - t) % KYBER_Q + KYBER_Q) % KYBER_Q;
-				coeffs[j] = ((coeffs[j] + t) % KYBER_Q + KYBER_Q) % KYBER_Q;
+				t = mod(zeta * coeffs[j + len], q);
+				temp1 = coeffs[j];
+				temp2 = coeffs[j + len];
+				coeffs[j + len] = mod(temp1 - t, q);
+				coeffs[j] = mod(temp1 + t, q);
 			}
 		}
 	}
@@ -76,167 +110,152 @@ void Poly::ntt()
 
 void Poly::invntt()
 {
-	int i = KYBER_N / 2 - 1;
+	int n = ring.getN();
+	int q = ring.getQ();
+	int zeta0 = ring.getZeta();
+	int invHalfN = ring.getInvHalfN();
+	int bitLength = log2(n) - 1;
+
+	int i = n / 2 - 1;
 	int zeta = 0;
 	int t = 0;
-	for (int len = 2; len <= KYBER_N / 2; len *= 2) {
-		for (int start = 0; start < KYBER_N; start += 2 * len) {
-			zeta = modExp(ZETA, reverse(i--, LOG2N - 1), KYBER_Q);
+
+	int temp1 = 0;
+	int temp2 = 0;
+
+	for (int len = 2; len <= n / 2; len *= 2) {
+		for (int start = 0; start < n; start += 2 * len) {
+			zeta = modExp(zeta0, reverse(i--, bitLength), q);
 			for (int j = start; j < start + len; j++) {
 				t = coeffs[j];
-				coeffs[j] = ((t + coeffs[j + len]) % KYBER_Q + KYBER_Q) % KYBER_Q;
-				coeffs[j + len] = ((zeta * (coeffs[j + len] - t)) % KYBER_Q + KYBER_Q) % KYBER_Q;
+				temp1 = coeffs[j];
+				temp2 = coeffs[j + len];
+				coeffs[j] = mod(t + temp2, q);
+				coeffs[j + len] = mod(zeta * (temp2 - t), q);
 			}
 		}
 	}
 
-	for (int i = 0; i < KYBER_N; i++) {
-		coeffs[i] = ((coeffs[i] * INV_N_DIV2) % KYBER_Q + KYBER_Q) % KYBER_Q;
-	}
-}
-
-Poly Poly::multiplyNTT(Poly& fNtt, Poly& gNtt)
-{
-	Poly result;
-
-	for (int i = 0; i < KYBER_N / 2; i++) {
-		int a0 = fNtt.coeffs[2 * i];
-		int a1 = fNtt.coeffs[2 * i + 1];
-		int b0 = gNtt.coeffs[2 * i];
-		int b1 = gNtt.coeffs[2 * i + 1];
-		int zeta = modExp(ZETA, 2 * reverse(i, LOG2N - 1) + 1, KYBER_Q);
-		int zeta1 = zetas[i];
-
-		int c0 = mod(a0 * b0 + a1 * b1 * zeta);
-		int c01 = mod(a0 * b0 + a1 * b1 * zeta1);
-		int c1 = mod(a0 * b1 + a1 * b0);
-
-		result.coeffs[2 * i] = c0;
-		result.coeffs[2 * i + 1] = c1;
-	}
-
-	return result;
-}
-
-Poly Poly::add(Poly& f, Poly& g)
-{
-	Poly result;
-	for (int i = 0; i < KYBER_N; i++) {
-		result.coeffs[i] = mod(f.coeffs[i] + g.coeffs[i]);
-	}
-	return result;
-}
-
-Poly Poly::sub(Poly& f, Poly& g)
-{
-	Poly result;
-	for (int i = 0; i < KYBER_N; i++) {
-		result.coeffs[i] = mod(f.coeffs[i] - g.coeffs[i]);
-	}
-	return result;
-}
-
-std::vector<uint8_t> Poly::byteEncodePoly()
-{
-	std::vector<uint8_t> result(KYBER_POLYBYTES);
-
-	for (int i = 0, j = 0; i < KYBER_N; i += 2, j += 3) {
-		uint16_t t0 = coeffs[i];
-		uint16_t t1 = coeffs[i + 1];
-
-		t0 = t0 % KYBER_Q;
-		t1 = t1 % KYBER_Q;
-
-		result[j] = t0 & 0xFF;
-		result[j + 1] = ((t0 >> 8) | ((t1 & 0x0F) << 4)) & 0xFF;
-		result[j + 2] = (t1 >> 4) & 0xFF;
-	}
-
-	return result;
-}
-
-void Poly::byteDecodePoly(std::vector<uint8_t>& bytes)
-{
-	for (int i = 0, j = 0; i < KYBER_N; i += 2, j += 3) {
-		uint16_t t0 = bytes[j] | ((bytes[j + 1] & 0x0F) << 8);
-		uint16_t t1 = (bytes[j + 1] >> 4) | (bytes[j + 2] << 4);
-
-		coeffs[i] = t0;
-		coeffs[i + 1] = t1;
-	}
-}
-
-std::vector<uint8_t> Poly::byteEncode(Poly vec[KYBER_K], int d)
-{
-	std::vector<uint8_t> result;
-	for (int i = 0; i < KYBER_K; i++) {
-		std::vector<uint8_t> encoded = vec[i].byteEncodePoly(d);
-		result.insert(result.end(), encoded.begin(), encoded.end());
-	}
-	return result;
-}
-
-void Poly::byteDecode(Poly vec[KYBER_K], std::vector<uint8_t>& bytes, int d)
-{
-	for (int v = 0; v < KYBER_K; v++) {
-		std::vector<uint8_t> slice(bytes.begin() + v * d * 32, bytes.begin() + (v + 1) * d * 32);
-		vec[v].byteDecodePoly(slice, d);
-	}
-}
-
-std::vector<uint8_t> Poly::byteEncodePoly(int d)
-{
-	std::vector<uint8_t> bits(256 * d);
-
-	uint16_t a;
-
-	for (int i = 0; i < KYBER_N; i++) {
-		a = coeffs[i];
-		for (int j = 0; j < d; j++) {
-			bits[i * d + j] = a & 0x1;
-			a = (a - bits[i * d + j]) >> 1;
-		}
-	}
-
-	return bitsToBytes(bits.data(), 256 * d, d);
-}
-
-void Poly::byteDecodePoly(std::vector<uint8_t>& bytes, int d)
-{
-	int m = d < 12 ? (1 << d) : KYBER_Q;
-
-	std::vector<uint8_t> bits = bytesToBits(bytes.data(), 32 * d);
-
-	for (int i = 0; i < KYBER_N; i++) {
-		coeffs[i] = 0;
-		for (int j = 0; j < d; j++) {
-			coeffs[i] += (bits[i * d + j] * (1 << j)) % m;
-		}
+	for (int i = 0; i < n; i++) {
+		coeffs[i] = mod(coeffs[i] * invHalfN, q);
 	}
 }
 
 void Poly::compress(int d)
 {
-	for (int i = 0; i < KYBER_N; i++) {
-		coeffs[i] = compressX(coeffs[i], d);
+	for (int i = 0; i < ring.getN(); i++) {
+		coeffs[i] = compressX(coeffs[i], d, ring.getQ());
 	}
 }
 
 void Poly::decompress(int d)
 {
-	for (int i = 0; i < KYBER_N; i++) {
-		coeffs[i] = decompressX(coeffs[i], d);
+	for (int i = 0; i < ring.getN(); i++) {
+		coeffs[i] = decompressX(coeffs[i], d, ring.getQ());
 	}
 }
 
-void Poly::print(const char* msg)
+void Poly::print(const char* msg) const
 {
 	printf("\n%s\n", msg);
 	printf("[");
-	for (int i = 0; i < KYBER_N; i++) {
+	for (int i = 0; i < ring.getN(); i++) {
 		printf("%5d,", coeffs[i]);
 	}
 	printf("]");
 	printf("\nEND OF POLYNOM\n\n");
 }
 
+PolyRing& Poly::getRing()
+{
+	return ring;
+}
+
+//Requires left and right be in NTT form
+const Poly operator*(const Poly& left, const Poly& right)
+{
+	if (!(left.ring == right.ring)) {
+		throw std::invalid_argument("Operands must have the same ring");
+	}
+
+	Poly c(left.ring);
+	int q = left.ring.getQ();
+	int zeta0 = left.ring.getZeta();
+	int n = left.ring.getN();
+
+	int zeta = 0;
+	int bitLength = log2(n) - 1;
+
+	int a = 0;
+	int b = 0;
+
+	//Poly: a + bx
+
+	for (int i = 0; i < c.ring.getN() / 2; i++) {
+		int leftA = left.coeffs[2 * i];
+		int leftB = left.coeffs[2 * i + 1];
+
+		int rightA = right.coeffs[2 * i];
+		int rightB = right.coeffs[2 * i + 1];
+
+		zeta = modExp(zeta0, 2 * reverse(i, bitLength) + 1, q);
+		// printf("%5d", zeta);
+
+
+		a = mod(mod(leftA * rightA, q) + mod(mod(leftB * rightB, q) * zeta, q), q);
+		b = mod(mod(leftA * rightB, q) + mod(rightA * leftB, q), q);
+		c.coeffs[2 * i] = a;
+		c.coeffs[2 * i + 1] = b;
+	}
+
+	return c;
+}
+
+const Poly operator+(const Poly& left, const Poly& right)
+{
+	if (!(left.ring == right.ring)) {
+		throw std::invalid_argument("Operands must have the same ring");
+	}
+
+	Poly c(left.ring);
+	int q = left.ring.getQ();
+	int n = left.ring.getN();
+
+	for (int i = 0; i < n; i++) {
+		c.coeffs[i] = mod(left.coeffs[i] + right.coeffs[i], q);
+	}
+
+	return c;
+}
+
+const Poly operator-(const Poly& left, const Poly& right)
+{
+	if (!(left.ring == right.ring)) {
+		throw std::invalid_argument("Operands must have the same ring");
+	}
+
+	Poly c(left.ring);
+	int q = left.ring.getQ();
+	int n = left.ring.getN();
+
+	for (int i = 0; i < n; i++) {
+		c.coeffs[i] = mod(left.coeffs[i] - right.coeffs[i], q);
+	}
+
+	return c;
+}
+
+bool operator==(const Poly& left, const Poly& right)
+{
+	if (left.ring != right.ring) {
+		return false;
+	}
+
+	for (int i = 0; i < left.ring.getN(); i++) {
+		if (left[i] != right[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
