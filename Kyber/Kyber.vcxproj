@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="KPKE.cpp" />
     <ClCompile Include="Kyber.cpp" />
+    <ClCompile Include="MLKEM.cpp" />
     <ClCompile Include="Poly.cpp" />
     <ClCompile Include="PolyCoder.cpp" />
     <ClCompile Include="PolyMatrix.cpp" />
@@ -140,6 +141,7 @@
     <ClInclude Include="KPKE.h" />
     <ClInclude Include="KyberContext.h" />
     <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="MLKEM.h" />
     <ClInclude Include="Params.h" />
     <ClInclude Include="Poly.h" />
     <ClInclude Include="PolyCoder.h" />
