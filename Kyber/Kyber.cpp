@@ -50,7 +50,7 @@ int main()
     std::vector<uint8_t> ek2(keys2.begin(), keys2.begin() + 384 * kyberContext.k + 32);
     std::vector<uint8_t> dk2(keys2.begin() + 384 * kyberContext.k + 32, keys2.end());
 
-    std::vector<uint8_t> encapsResult = mlkem.encaps(ek2, m);
+    std::vector<uint8_t> encapsResult = mlkem.encaps(ek1, m);
     std::vector<uint8_t> K(encapsResult.begin(), encapsResult.begin() + 32);
     std::vector<uint8_t> c(encapsResult.begin() + 32, encapsResult.end());
 
