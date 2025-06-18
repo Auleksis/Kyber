@@ -10,6 +10,8 @@ private:
 	int n; // defines poly modulo X^n + 1
 	int zeta; // first nth root of unity
 	int invHalfN; // (N/2)^(-1) in q ring
+	int invN;
+	int qBitLength;
 
 	bool isPrime(int number);
 	void findFirstPrimitiveRootOfUnity();
@@ -20,9 +22,11 @@ public:
 	PolyRing(int q, int n);
 	void print(const char* prefix = "");
 	int getQ();
+	int getQBitLength();
 	int getN();
 	int getZeta();
 	int getInvHalfN();
+	int getInvN();
 	friend bool operator== (const PolyRing& left, const PolyRing& right);
 };
 

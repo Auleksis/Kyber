@@ -199,14 +199,13 @@ const Poly operator*(const Poly& left, const Poly& right)
 		int rightB = right.coeffs[2 * i + 1];
 
 		zeta = modExp(zeta0, 2 * reverse(i, bitLength) + 1, q);
-		// printf("%5d", zeta);
-
 
 		a = mod(mod(leftA * rightA, q) + mod(mod(leftB * rightB, q) * zeta, q), q);
 		b = mod(mod(leftA * rightB, q) + mod(rightA * leftB, q), q);
 		c.coeffs[2 * i] = a;
 		c.coeffs[2 * i + 1] = b;
 	}
+
 
 	return c;
 }

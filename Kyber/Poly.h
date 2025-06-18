@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "MathUtils.h"
 #include "PolyRing.h"
+#include <thread>
 
 class Poly
 {

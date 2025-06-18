@@ -63,18 +63,30 @@ PolyRing::PolyRing(int q, int n): q(q), n(n)
 		throw std::invalid_argument("n must divide q - 1");
 	}
 
+	qBitLength = (int)(log2(q)) + 1;
+
+	int x, y;
+	int g = gcdExtended(n, q, &x, &y);
+
+	invN = mod(x, q);
+
 	findFirstPrimitiveRootOfUnity();
 	findInvHalfN();
 }
 
 void PolyRing::print(const char* prefix)
 {
-	printf("%s\nPolyRing info:\n\tQ = %d\n\tN = %d\n\tZeta = %d\n\t(N / 2)^(-1) = %d\n\n", prefix, q, n, zeta, invHalfN);
+	printf("%s\nPolyRing info:\n\tQ = %d (%d bits)\n\tN = %d\n\tZeta = %d\n\tN^-1 = %d\n\t(N / 2)^(-1) = %d\n\n", prefix, q, qBitLength, n, zeta, invN, invHalfN);
 }
 
 int PolyRing::getQ()
 {
 	return q;
+}
+
+int PolyRing::getQBitLength()
+{
+	return qBitLength;
 }
 
 int PolyRing::getN()
@@ -90,6 +102,11 @@ int PolyRing::getZeta()
 int PolyRing::getInvHalfN()
 {
 	return invHalfN;
+}
+
+int PolyRing::getInvN()
+{
+	return invN;
 }
 
 bool operator==(const PolyRing& left, const PolyRing& right)

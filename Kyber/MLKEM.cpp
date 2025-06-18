@@ -3,13 +3,16 @@
 std::vector<uint8_t> MLKEM::keyGenInternal(std::vector<uint8_t>& d, std::vector<uint8_t>& z)
 {
 	std::vector<uint8_t> keys = kpke.keyGen(d);
-	std::vector<uint8_t> ekPke(keys.begin(), keys.begin() + 384 * context.k + 32);
-	std::vector<uint8_t> dkPke(keys.begin() + 384 * context.k + 32, keys.begin() + 2 * 384 * context.k + 32);
+
+	int byteLen = 32 * context.ring.getQBitLength();
+
+	std::vector<uint8_t> ekPke(keys.begin(), keys.begin() + byteLen * context.k + 32);
+	std::vector<uint8_t> dkPke(keys.begin() + byteLen * context.k + 32, keys.begin() + 2 * byteLen * context.k + 32);
 
 	std::vector<uint8_t> ek;
-	ek.reserve(384 * context.k + 32);
+	ek.reserve(byteLen * context.k + 32);
 	std::vector<uint8_t> dk;
-	dk.reserve(768 * context.k + 96);
+	dk.reserve(2 * byteLen * context.k + 96);
 
 	ek = ekPke;
 	dk.insert(dk.end(), dkPke.begin(), dkPke.end());
@@ -70,10 +73,12 @@ std::vector<uint8_t> MLKEM::encapsInternal(std::vector<uint8_t>& ek, std::vector
 
 std::vector<uint8_t> MLKEM::decapsInternal(std::vector<uint8_t>& dk, std::vector<uint8_t>& c)
 {
-	std::vector<uint8_t> dkPke(dk.begin(), dk.begin() + 384 * context.k);
-	std::vector<uint8_t> ekPke(dk.begin() + 384 * context.k, dk.begin() + 768 * context.k + 32);
-	std::vector<uint8_t> h(dk.begin() + 768 * context.k + 32, dk.begin() + 768 * context.k + 64);
-	std::vector<uint8_t> z(dk.begin() + 768 * context.k + 64, dk.end());
+	int byteLen = 32 * context.ring.getQBitLength();
+
+	std::vector<uint8_t> dkPke(dk.begin(), dk.begin() + byteLen * context.k);
+	std::vector<uint8_t> ekPke(dk.begin() + byteLen * context.k, dk.begin() + 2 * byteLen * context.k + 32);
+	std::vector<uint8_t> h(dk.begin() + 2 * byteLen * context.k + 32, dk.begin() + 2 * byteLen * context.k + 64);
+	std::vector<uint8_t> z(dk.begin() + 2 * byteLen * context.k + 64, dk.end());
 
 	std::vector<uint8_t> m = kpke.decrypt(c, dkPke);
 

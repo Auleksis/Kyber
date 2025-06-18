@@ -35,6 +35,16 @@ const Poly& PolyVector::operator[](int i) const
 
 void PolyVector::ntt()
 {
+	//std::vector<std::thread> threads(size);
+
+	//for (int i = 0; i < size; i++) {
+	//	threads[i] = std::thread(&Poly::ntt, &vector[i]);
+	//}
+
+	//for (auto& t : threads) {
+	//	t.join();
+	//}
+
 	for (int i = 0; i < size; i++) {
 		vector[i].ntt();
 	}

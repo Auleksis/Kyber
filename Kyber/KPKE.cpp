@@ -13,18 +13,21 @@ void KPKE::sampleNTT(PolyMatrix& A, uint8_t rho[32], int8_t i, int8_t j)
 
 	short counter = 0;
 
-	while (counter < context.ring.getN()) {
+	int n = context.ring.getN();
+	int q = context.ring.getN();
+
+	while (counter < n) {
 		uint8_t C[3];
 		ctx.squeeze(C, 3);
 		short d1 = C[0] + 256 * (C[1] % 16);
 		short d2 = C[1] / 16 + 16 * C[2];
 
-		if (d1 < context.ring.getQ()) {
+		if (d1 < q) {
 			A(i, j)[counter] = d1;
 			counter++;
 		}
 
-		if (d2 < context.ring.getQ() && counter < context.ring.getN()) {
+		if (d2 < q && counter < n) {
 			A(i, j)[counter] = d2;
 			counter++;
 		}
@@ -34,8 +37,10 @@ void KPKE::sampleNTT(PolyMatrix& A, uint8_t rho[32], int8_t i, int8_t j)
 Poly KPKE::samplePolyCBD(int nu, uint8_t* b)
 {
 	Poly result(context.ring);
+	int n = context.ring.getN();
+	int q = context.ring.getQ();
 	std::vector<uint8_t> bits = bytesToBits(b, 64 * nu);
-	for (int i = 0; i < context.ring.getN(); i++) {
+	for (int i = 0; i < n; i++) {
 		int x = 0;
 		int y = 0;
 
@@ -44,7 +49,7 @@ Poly KPKE::samplePolyCBD(int nu, uint8_t* b)
 			y += bits[2 * i * nu + nu + j];
 		}
 
-		result[i] = mod((x - y), context.ring.getQ());
+		result[i] = mod((x - y), q);
 	}
 	return result;
 }
@@ -55,7 +60,6 @@ std::vector<uint8_t> KPKE::keyGen(std::vector<uint8_t>& d)
 	std::vector<uint8_t> gHashInput(33);
 	memcpy(gHashInput.data(), d.data(), 32);
 	gHashInput[32] = context.k;
-
 
 	if (!EVP_Digest(gHashInput.data(), gHashInput.size(), gHash.data(), nullptr, EVP_sha3_512(), nullptr)) {
 		printf("Error while G hash calculation in K-PKE KeyGen\n");
@@ -102,10 +106,12 @@ std::vector<uint8_t> KPKE::keyGen(std::vector<uint8_t>& d)
 
 	PolyVector t = A * s + e;
 
-	std::vector<uint8_t> ekPke = coder.byteEncode(t, 12);
+	int qBitLen = context.ring.getQBitLength();
+
+	std::vector<uint8_t> ekPke = coder.byteEncode(t, qBitLen);
 	ekPke.insert(ekPke.end(), std::begin(rho), std::end(rho));
 
-	std::vector<uint8_t> dkPke = coder.byteEncode(s, 12);
+	std::vector<uint8_t> dkPke = coder.byteEncode(s, qBitLen);
 
 	std::vector<uint8_t> keys;
 	keys.reserve(ekPke.size() + dkPke.size());
@@ -118,10 +124,12 @@ std::vector<uint8_t> KPKE::keyGen(std::vector<uint8_t>& d)
 
 std::vector<uint8_t> KPKE::encrypt(std::vector<uint8_t>& m, std::vector<uint8_t>& r, std::vector<uint8_t>& ekPke)
 {
-	PolyVector t = coder.byteDecode(ekPke, context.ring, context.k, 12);
+	int qBitLen = context.ring.getQBitLength();
+
+	PolyVector t = coder.byteDecode(ekPke, context.ring, context.k, qBitLen);
 
 	uint8_t rho[32];
-	memcpy(rho, ekPke.data() + 384 * context.k, 32);
+	memcpy(rho, ekPke.data() + 32 * qBitLen * context.k, 32);
 
 	uint8_t N = 0;
 
@@ -204,7 +212,9 @@ std::vector<uint8_t> KPKE::decrypt(std::vector<uint8_t>& c, std::vector<uint8_t>
 	vWrapper.decompress(context.dv);
 	Poly v = vWrapper[0];
 
-	PolyVector s = coder.byteDecode(dkPke, context.ring, context.k, 12);
+	int qBitLen = context.ring.getQBitLength();
+
+	PolyVector s = coder.byteDecode(dkPke, context.ring, context.k, qBitLen);
 
 	u.ntt();
 

@@ -9,11 +9,13 @@
 
 int test(KyberContext& kyberContext, std::vector<uint8_t>& m, std::vector<uint8_t>& d, std::vector<uint8_t>& z) {
     auto start_time = std::chrono::high_resolution_clock::now();
+
+    int qBitLen = kyberContext.ring.getQBitLength();
     
     MLKEM mlkem(kyberContext);
     std::vector<uint8_t> keys1 = mlkem.keyGen(d, z);
-    std::vector<uint8_t> ek1(keys1.begin(), keys1.begin() + 384 * kyberContext.k + 32);
-    std::vector<uint8_t> dk1(keys1.begin() + 384 * kyberContext.k + 32, keys1.end());
+    std::vector<uint8_t> ek1(keys1.begin(), keys1.begin() + 32 * qBitLen * kyberContext.k + 32);
+    std::vector<uint8_t> dk1(keys1.begin() + 32 * qBitLen * kyberContext.k + 32, keys1.end());
 
     std::vector<uint8_t> encapsResult = mlkem.encaps(ek1, m);
     std::vector<uint8_t> K(encapsResult.begin(), encapsResult.begin() + 32);
@@ -36,7 +38,6 @@ int test(KyberContext& kyberContext, std::vector<uint8_t>& m, std::vector<uint8_
 
 int main()
 {
-
     std::vector<uint8_t> m(32);
     for (int i = 0; i < 32; i++) {
         m[i] = i;
@@ -48,11 +49,14 @@ int main()
     }
     printf("\n\n");
 
+    PolyRing testRing(7681, 512);
+    testRing.print("TEST RING");
+
     PolyRing kyberRing(3329, 256);
 
     kyberRing.print("CURRENT KYBER RING");
 
-    KyberContext kyberContext = { kyberRing, 2, 3, 2, 10, 4 };
+    KyberContext kyberContext = { testRing, 2, 2, 2, 10, 4 };
 
     std::random_device rd;
     std::mt19937 gen(rd());
