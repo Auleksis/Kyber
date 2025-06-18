@@ -56,7 +56,7 @@ int main()
 
     kyberRing.print("CURRENT KYBER RING");
 
-    KyberContext kyberContext = { testRing, 2, 2, 2, 10, 4 };
+    KyberContext kyberContext = { kyberRing, 2, 2, 2, 10, 4 };
 
     std::random_device rd;
     std::mt19937 gen(rd());
