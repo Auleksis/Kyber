@@ -85,7 +85,7 @@ void Poly::ntt()
 	int n = ring.getN();
 	int q = ring.getQ();
 	int zeta0 = ring.getZeta();
-	int bitLength = log2(n) - 1;
+	int bitLength = 8;
 
 	int i = 1;
 	int zeta = 0;
@@ -94,7 +94,7 @@ void Poly::ntt()
 	int temp1 = 0;
 	int temp2 = 0;
 
-	for (int len = n / 2; len >= 2; len >>= 1) {
+	for (int len = n / 2; len >= 1; len >>= 1) {
 		for (int start = 0; start < n; start += 2 * len) {
 			zeta = modExp(zeta0, reverse(i++, bitLength), q);
 			for (int j = start; j < start + len; j++) {
@@ -113,31 +113,31 @@ void Poly::invntt()
 	int n = ring.getN();
 	int q = ring.getQ();
 	int zeta0 = ring.getZeta();
-	int invHalfN = ring.getInvHalfN();
-	int bitLength = log2(n) - 1;
+	int invN = ring.getInvN();
+	int bitLength = 8;
 
-	int i = n / 2 - 1;
+	int i = n - 1;
 	int zeta = 0;
 	int t = 0;
 
 	int temp1 = 0;
 	int temp2 = 0;
 
-	for (int len = 2; len <= n / 2; len *= 2) {
+	for (int len = 1; len < n; len *= 2) {
 		for (int start = 0; start < n; start += 2 * len) {
-			zeta = modExp(zeta0, reverse(i--, bitLength), q);
+			zeta = -modExp(zeta0, reverse(i--, bitLength), q);
 			for (int j = start; j < start + len; j++) {
 				t = coeffs[j];
 				temp1 = coeffs[j];
 				temp2 = coeffs[j + len];
 				coeffs[j] = mod(t + temp2, q);
-				coeffs[j + len] = mod(zeta * (temp2 - t), q);
+				coeffs[j + len] = mod(zeta * (t - temp2), q);
 			}
 		}
 	}
 
 	for (int i = 0; i < n; i++) {
-		coeffs[i] = mod(coeffs[i] * invHalfN, q);
+		coeffs[i] = mod(coeffs[i] * invN, q);
 	}
 }
 
@@ -180,32 +180,11 @@ const Poly operator*(const Poly& left, const Poly& right)
 
 	Poly c(left.ring);
 	int q = left.ring.getQ();
-	int zeta0 = left.ring.getZeta();
 	int n = left.ring.getN();
 
-	int zeta = 0;
-	int bitLength = log2(n) - 1;
-
-	int a = 0;
-	int b = 0;
-
-	//Poly: a + bx
-
-	for (int i = 0; i < c.ring.getN() / 2; i++) {
-		int leftA = left.coeffs[2 * i];
-		int leftB = left.coeffs[2 * i + 1];
-
-		int rightA = right.coeffs[2 * i];
-		int rightB = right.coeffs[2 * i + 1];
-
-		zeta = modExp(zeta0, 2 * reverse(i, bitLength) + 1, q);
-
-		a = mod(mod(leftA * rightA, q) + mod(mod(leftB * rightB, q) * zeta, q), q);
-		b = mod(mod(leftA * rightB, q) + mod(rightA * leftB, q), q);
-		c.coeffs[2 * i] = a;
-		c.coeffs[2 * i + 1] = b;
+	for (int i = 0; i < n; i++) {
+		c.coeffs[i] = mod(left.coeffs[i] * right.coeffs[i], q);
 	}
-
 
 	return c;
 }

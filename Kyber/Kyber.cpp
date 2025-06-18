@@ -49,14 +49,14 @@ int main()
     }
     printf("\n\n");
 
-    PolyRing testRing(7681, 512);
+    PolyRing testRing(7681, 256);
     testRing.print("TEST RING");
 
     PolyRing kyberRing(3329, 256);
 
     kyberRing.print("CURRENT KYBER RING");
 
-    KyberContext kyberContext = { kyberRing, 2, 2, 2, 10, 4 };
+    KyberContext kyberContext = { testRing, 2, 2, 2, 10, 4 };
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -69,7 +69,7 @@ int main()
         z[i] = gen();
     }
 
-    int testCount = 1000;
+    int testCount = 10000;
     int allTime = 0;
 
     int temp = 0;

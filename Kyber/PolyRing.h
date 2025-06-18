@@ -10,8 +10,8 @@ private:
 	int n; // defines poly modulo X^n + 1
 	int zeta; // first nth root of unity
 	int invHalfN; // (N/2)^(-1) in q ring
-	int invN;
-	int qBitLength;
+	int invN; // N^(-1) in q ring
+	int qBitLength; // bit length of q
 
 	bool isPrime(int number);
 	void findFirstPrimitiveRootOfUnity();

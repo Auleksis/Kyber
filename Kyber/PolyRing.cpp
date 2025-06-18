@@ -15,14 +15,14 @@ void PolyRing::findFirstPrimitiveRootOfUnity()
 	bool foundRoot;
 	for (int candidate = 2; candidate < q; candidate++) {
 		foundRoot = true;
-		for (int i = 1; i < n; i++) {
+		for (int i = 1; i < 2 * n; i++) {
 			if (modExp(candidate, i, q) == 1) {
 				foundRoot = false;
 				break;
 			}
 
 		}
-		if (foundRoot && modExp(candidate, n, q) == 1) {
+		if (foundRoot && modExp(candidate, 2 * n, q) == 1) {
 			zeta = candidate;
 			return;
 		}
