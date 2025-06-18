@@ -66,7 +66,7 @@ int main()
         z[i] = gen();
     }
 
-    int testCount = 10000;
+    int testCount = 100;
     int allTime = 0;
 
     int temp = 0;
