@@ -50,11 +50,7 @@ int main()
     printf("\n\n");
 
     PolyRing testRing(7681, 256);
-    testRing.print("TEST RING");
-
-    PolyRing kyberRing(3329, 256);
-
-    kyberRing.print("CURRENT KYBER RING");
+    testRing.print("CURRENT KYBER RING");
 
     KyberContext kyberContext = { testRing, 2, 2, 2, 10, 4 };
 
