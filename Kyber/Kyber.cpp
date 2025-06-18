@@ -5,9 +5,38 @@
 #include "MLKEM.h"
 #include <random>
 #include <iomanip>
+#include <chrono>
+
+int test(KyberContext& kyberContext, std::vector<uint8_t>& m, std::vector<uint8_t>& d, std::vector<uint8_t>& z) {
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
+    MLKEM mlkem(kyberContext);
+    std::vector<uint8_t> keys1 = mlkem.keyGen(d, z);
+    std::vector<uint8_t> ek1(keys1.begin(), keys1.begin() + 384 * kyberContext.k + 32);
+    std::vector<uint8_t> dk1(keys1.begin() + 384 * kyberContext.k + 32, keys1.end());
+
+    std::vector<uint8_t> encapsResult = mlkem.encaps(ek1, m);
+    std::vector<uint8_t> K(encapsResult.begin(), encapsResult.begin() + 32);
+    std::vector<uint8_t> c(encapsResult.begin() + 32, encapsResult.end());
+
+    std::vector<uint8_t> decapsedK = mlkem.decaps(dk1, c);
+
+    for (int i = 0; i < K.size(); i++) {
+        if (K[i] != decapsedK[i]) {
+            return -1;
+        }
+    }
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    auto duration = duration_cast<std::chrono::microseconds>(end_time - start_time);
+
+    return duration.count();
+}
 
 int main()
 {
+
     std::vector<uint8_t> m(32);
     for (int i = 0; i < 32; i++) {
         m[i] = i;
@@ -36,36 +65,22 @@ int main()
         z[i] = gen();
     }
 
-    MLKEM mlkem(kyberContext);
-    std::vector<uint8_t> keys1 = mlkem.keyGen(d, z);
-    std::vector<uint8_t> ek1(keys1.begin(), keys1.begin() + 384 * kyberContext.k + 32);
-    std::vector<uint8_t> dk1(keys1.begin() + 384 * kyberContext.k + 32, keys1.end());
+    int testCount = 1000;
+    int allTime = 0;
 
-    for (int i = 0; i < 32; i++) {
-        d[i] = gen();
-        z[i] = gen();
+    int temp = 0;
+    for (int i = 0; i < testCount; i++) {
+        temp = test(kyberContext, m, d, z);
+        if (temp == -1) {
+            printf("Kyber Decaps Failure\n");
+            return -1;
+        }
+
+        allTime += temp;
     }
 
-    std::vector<uint8_t> keys2 = mlkem.keyGen(d, z);
-    std::vector<uint8_t> ek2(keys2.begin(), keys2.begin() + 384 * kyberContext.k + 32);
-    std::vector<uint8_t> dk2(keys2.begin() + 384 * kyberContext.k + 32, keys2.end());
-
-    std::vector<uint8_t> encapsResult = mlkem.encaps(ek1, m);
-    std::vector<uint8_t> K(encapsResult.begin(), encapsResult.begin() + 32);
-    std::vector<uint8_t> c(encapsResult.begin() + 32, encapsResult.end());
-
-    printf("ENCAPSED K\n");
-    for (int i = 0; i < 32; i++) {
-        printf("%5d", K[i]);
-    }
-    printf("\n\n");
-
-    std::vector<uint8_t> decapsedK = mlkem.decaps(dk1, c);
-    printf("DECAPSED K\n");
-    for (int i = 0; i < 32; i++) {
-        printf("%5d", decapsedK[i]);
-    }
-    printf("\n\n");
+    float meanTime = (float)allTime / testCount;
+    printf("Mean working time: %f microseconds\n", meanTime);
 
     return 0;
 }
