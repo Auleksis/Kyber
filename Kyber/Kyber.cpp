@@ -49,9 +49,6 @@ int main()
     }
     printf("\n\n");
 
-    PolyRing testRing(7681, 512);
-    testRing.print("TEST RING");
-
     PolyRing kyberRing(3329, 256);
 
     kyberRing.print("CURRENT KYBER RING");
@@ -69,7 +66,7 @@ int main()
         z[i] = gen();
     }
 
-    int testCount = 1000;
+    int testCount = 10000;
     int allTime = 0;
 
     int temp = 0;
