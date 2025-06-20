@@ -43,17 +43,10 @@ int main()
         m[i] = i;
     }
 
-    printf("\n\nPLAINT TEXT\n");
-    for (int i = 0; i < 32; i++) {
-        printf("%5d", m[i]);
-    }
-    printf("\n\n");
-
     PolyRing kyberRing(3329, 256);
+    KyberContext kyberContext = { kyberRing, 2, 3, 2, 10, 4 };
 
-    kyberRing.print("CURRENT KYBER RING");
-
-    KyberContext kyberContext = { kyberRing, 2, 2, 2, 10, 4 };
+    kyberContext.print();
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -66,7 +59,7 @@ int main()
         z[i] = gen();
     }
 
-    int testCount = 100;
+    int testCount = 1000;
     int allTime = 0;
 
     int temp = 0;
