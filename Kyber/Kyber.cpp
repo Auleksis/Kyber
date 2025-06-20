@@ -1,7 +1,4 @@
-﻿// Kyber.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
-#include <iostream>
+﻿#include <iostream>
 #include "MLKEM.h"
 #include <random>
 #include <iomanip>
@@ -43,17 +40,11 @@ int main()
         m[i] = i;
     }
 
-    printf("\n\nPLAINT TEXT\n");
-    for (int i = 0; i < 32; i++) {
-        printf("%5d", m[i]);
-    }
-    printf("\n\n");
-
     PolyRing kyberRing(3329, 256);
 
-    kyberRing.print("CURRENT KYBER RING");
+    KyberContext kyberContext = { kyberRing, 4, 2, 2, 11, 5 };
 
-    KyberContext kyberContext = { kyberRing, 2, 2, 2, 10, 4 };
+    kyberContext.print();
 
     std::random_device rd;
     std::mt19937 gen(rd());
