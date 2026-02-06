@@ -33,12 +33,53 @@ int test(KyberContext& kyberContext, std::vector<uint8_t>& m, std::vector<uint8_
     return duration.count();
 }
 
+std::vector<uint8_t> nextByte(KyberContext& kyberContext, std::vector<uint8_t>& m, std::vector<uint8_t>& d, std::vector<uint8_t>& z) {
+    int qBitLen = kyberContext.ring.getQBitLength();
+
+    MLKEM mlkem(kyberContext);
+    std::vector<uint8_t> keys1 = mlkem.keyGen(d, z);
+    std::vector<uint8_t> ek1(keys1.begin(), keys1.begin() + 32 * qBitLen * kyberContext.k + 32);
+    std::vector<uint8_t> dk1(keys1.begin() + 32 * qBitLen * kyberContext.k + 32, keys1.end());
+
+    std::vector<uint8_t> encapsResult = mlkem.encaps(ek1, m);
+    std::vector<uint8_t> result(encapsResult.begin(), encapsResult.begin() + 64);
+    return result;
+}
+
+void computeStats(std::vector<int>& stats, std::vector<uint8_t>& v) {
+    int t = 0;
+    for (int i = 0; i < v.size(); i++) {
+        t = v[i];
+        for(int j = 0; j < 8; j++) {
+            int r = t & 1;
+            t >>= 1;
+            if (r) {
+                stats[1]++;
+            }
+            else {
+                stats[0]++;
+            }
+        }
+    }
+}
+
+void printVector(std::vector<uint8_t>& v) {
+    for (int i = 0; i < v.size(); i++) {
+        printf("%5d", v[i]);
+    }
+    printf("\n");
+}
+
+void printVector(std::vector<int>& v) {
+    for (int i = 0; i < v.size(); i++) {
+        printf("%20d", v[i]);
+    }
+    printf("\n");
+}
+
 int main()
 {
-    std::vector<uint8_t> m(32);
-    for (int i = 0; i < 32; i++) {
-        m[i] = i;
-    }
+    std::vector<int> stats(2, 0);
 
     PolyRing kyberRing(3329, 256);
 
@@ -46,34 +87,43 @@ int main()
 
     kyberContext.print();
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::vector<uint8_t> seed(32, 0);
+    seed[0] = 2;
 
-    std::vector<uint8_t> d(32);
-    std::vector<uint8_t> z(32);
+    auto start_time = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < 32; i++) {
-        d[i] = gen();
-        z[i] = gen();
-    }
+    for (int i = 0; i < 10000; i++) {
 
-    int testCount = 10000;
-    int allTime = 0;
+        std::vector<uint8_t> extendedSeed(64);
 
-    int temp = 0;
-    for (int i = 0; i < testCount; i++) {
-        temp = test(kyberContext, m, d, z);
-        if (temp == -1) {
-            printf("Kyber Decaps Failure\n");
+        if (!EVP_Digest(seed.data(), seed.size(), extendedSeed.data(), nullptr, EVP_sha3_512(), nullptr)) {
+            printf("Error while extending seed\n");
             return -1;
         }
 
-        allTime += temp;
+        std::vector<uint8_t> d(32);
+        memcpy(d.data(), extendedSeed.data(), 32);
+        std::vector<uint8_t> z(32);
+        memcpy(z.data(), &extendedSeed[32], 32);
+
+        std::vector<uint8_t> encapsResult = nextByte(kyberContext, seed, d, z);
+        std::vector<uint8_t> K(encapsResult.begin(), encapsResult.begin() + 32);
+        std::vector<uint8_t> c(encapsResult.begin() + 32, encapsResult.end());
+
+        seed = K;
+
+        //printVector(K);
+        //std::vector<uint8_t> cStats(c.begin(), c.begin() + 1);
+
+        //computeStats(stats, cStats);
     }
 
-    float meanTime = (float)allTime / testCount;
-    printf("Mean working time: %f microseconds\n", meanTime);
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    auto duration = duration_cast<std::chrono::seconds>(end_time - start_time);
+
+    //printVector(stats);
+    printf("%d seconds", duration.count());
 
     return 0;
 }
-
