@@ -33,7 +33,9 @@ public:
 	const Poly& operator= (const Poly& right);
 	uint16_t& operator[] (int i);
 	const uint16_t& operator[] (int i) const;
+	
 	friend bool operator== (const Poly& left, const Poly& right);
+	friend bool operator!= (const Poly& left, const Poly& right);
 
 	void compress(int d);
 	void decompress(int d);

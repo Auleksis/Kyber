@@ -28,5 +28,6 @@ public:
 	int getInvHalfN();
 	int getInvN();
 	friend bool operator== (const PolyRing& left, const PolyRing& right);
+	friend bool operator!= (const PolyRing& left, const PolyRing& right);
 };
 

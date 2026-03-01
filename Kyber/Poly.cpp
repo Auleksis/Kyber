@@ -258,3 +258,19 @@ bool operator==(const Poly& left, const Poly& right)
 
 	return true;
 }
+
+
+bool operator!=(const Poly& left, const Poly& right)
+{
+	if (left.ring != right.ring) {
+		return true;
+	}
+
+	for (int i = 0; i < left.ring.getN(); i++) {
+		if (left[i] != right[i]) {
+			return true;
+		}
+	}
+
+	return false;
+}

@@ -18,11 +18,11 @@ public:
         EVP_MD_CTX_free(ctx);
     }
 
-    void absorb(const uint8_t* input, size_t input_len) {
+    void absorb(const uint8_t* input, int input_len) {
         EVP_DigestUpdate(ctx, input, input_len);
     }
 
-    void squeeze(uint8_t* output, size_t output_len) {
+    void squeeze(uint8_t* output, int output_len) {
         EVP_DigestSqueeze(ctx, output, output_len);
     }
 

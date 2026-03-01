@@ -28,7 +28,7 @@ int test(KyberContext& kyberContext, std::vector<uint8_t>& m, std::vector<uint8_
 
     auto end_time = std::chrono::high_resolution_clock::now();
 
-    auto duration = duration_cast<std::chrono::microseconds>(end_time - start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
     return duration.count();
 }

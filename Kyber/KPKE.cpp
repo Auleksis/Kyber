@@ -88,7 +88,7 @@ std::vector<uint8_t> KPKE::keyGen(std::vector<uint8_t>& d)
 	std::vector<uint8_t> B(64 * context.nu1);
 	for (int i = 0; i < context.k; i++) {
 		prfShakeInput[32] = N;
-		shake256_hash(prfShakeInput, 33, B.data(), 64 * (size_t)context.nu1);
+		shake256_hash(prfShakeInput, 33, B.data(), 64 * (int)context.nu1);
 		s[i] = samplePolyCBD(context.nu1, B.data());
 		N++;
 	}
@@ -96,7 +96,7 @@ std::vector<uint8_t> KPKE::keyGen(std::vector<uint8_t>& d)
 	PolyVector e(context.ring, context.k);
 	for (int i = 0; i < context.k; i++) {
 		prfShakeInput[32] = N;
-		shake256_hash(prfShakeInput, 33, B.data(), 64 * (size_t)context.nu1);
+		shake256_hash(prfShakeInput, 33, B.data(), 64 * (int)context.nu1);
 		e[i] = samplePolyCBD(context.nu1, B.data());
 		N++;
 	}
@@ -148,7 +148,7 @@ std::vector<uint8_t> KPKE::encrypt(std::vector<uint8_t>& m, std::vector<uint8_t>
 	std::vector<uint8_t> B(64 * context.nu1);
 	for (int i = 0; i < context.k; i++) {
 		prfShakeInput[32] = N;
-		shake256_hash(prfShakeInput, 33, B.data(), 64 * (size_t)context.nu1);
+		shake256_hash(prfShakeInput, 33, B.data(), 64 * (int)context.nu1);
 		y[i] = samplePolyCBD(context.nu1, B.data());
 		N++;
 	}
@@ -156,7 +156,7 @@ std::vector<uint8_t> KPKE::encrypt(std::vector<uint8_t>& m, std::vector<uint8_t>
 	PolyVector e1(context.ring, context.k);
 	for (int i = 0; i < context.k; i++) {
 		prfShakeInput[32] = N;
-		shake256_hash(prfShakeInput, 33, B.data(), 64 * (size_t)context.nu2);
+		shake256_hash(prfShakeInput, 33, B.data(), 64 * (int)context.nu2);
 		e1[i] = samplePolyCBD(context.nu2, B.data());
 		N++;
 	}
@@ -165,7 +165,7 @@ std::vector<uint8_t> KPKE::encrypt(std::vector<uint8_t>& m, std::vector<uint8_t>
 	
 	Poly e2(context.ring);
 	prfShakeInput[32] = N;
-	shake256_hash(prfShakeInput, 33, B.data(), 64 * (size_t)context.nu2);
+	shake256_hash(prfShakeInput, 33, B.data(), 64 * (int)context.nu2);
 	e2 = samplePolyCBD(context.nu2, B.data());
 
 	y.ntt();

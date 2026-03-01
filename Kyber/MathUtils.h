@@ -4,7 +4,7 @@
 #include <cmath>
 #include "Params.h"
 
-inline void shake256_hash(uint8_t* input, size_t input_len, uint8_t* output, size_t output_len) {
+inline void shake256_hash(uint8_t* input, int input_len, uint8_t* output, int output_len) {
     for (int i = 0; i < output_len; i++) {
         output[i] = 0;
     }

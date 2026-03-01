@@ -1,0 +1,3 @@
+/home/aulex/Documents/Study/Diploma/Kyber/Kyber/build/CMakeFiles/Kyber.dir
+/home/aulex/Documents/Study/Diploma/Kyber/Kyber/build/CMakeFiles/edit_cache.dir
+/home/aulex/Documents/Study/Diploma/Kyber/Kyber/build/CMakeFiles/rebuild_cache.dir

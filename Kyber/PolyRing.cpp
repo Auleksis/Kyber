@@ -113,3 +113,8 @@ bool operator==(const PolyRing& left, const PolyRing& right)
 {
 	return left.n == right.n && left.q == right.q;
 }
+
+bool operator!=(const PolyRing& left, const PolyRing& right)
+{
+	return left.n != right.n || left.q != right.q;
+}
